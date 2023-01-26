@@ -2,7 +2,10 @@ import torch
 import torch.nn as nn
 from torchvision.models.detection import fasterrcnn_resnet50_fpn
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
-from typing import Any
+from typing import Any, Callable
+from torch.utils.data import DataLoader
+from torchmetrics import Metric
+from tqdm import tqdm
 
 class FasterRCNN(nn.Module):
   def __init__(self, num_classes: int, weights: Any = None) -> None:
@@ -13,3 +16,38 @@ class FasterRCNN(nn.Module):
     
   def forward(self, images: torch.Tensor, targets: torch.Tensor):
     return self.fasterrcnn(images, targets)
+  
+  def loss_batch(self, batch: tuple, opt = None, metric: Metric = None):
+    opt.zero_grad()
+    loss_dict = self(*batch) # Calculate losses (this returns a dict of multiple losses)
+    losses = sum(loss for loss in loss_dict.values())
+    losses.backward()
+    opt.step()
+    return losses.item()/len(batch) # Average loss
+  
+  def evaluate(self, dataloader: DataLoader, metric: Metric = None):
+    with torch.no_grad():
+      with tqdm(dataloader, unit = 'batch', desc = 'Validation') as vepoch:
+        for batch in vepoch:
+          preds = self(*batch)
+          metric.update(preds, batch[1]) # preds, targets
+          metric_dict =  metric.compute()
+          vepoch.set_postfix_str('mAP = {map} - mAP@0.5 = {map_50} - mAP@0.75 = {map_75}'.format(**metric_dict))
+          return metric_dict
+  
+  def fit(self, train_dl: DataLoader, valid_dl: DataLoader, n_epochs: int, metric: Metric = None, opt = None):
+    for epoch in range(n_epochs):
+      # Training (1 epoch)
+      running_loss = 0.
+      self.train()
+      with tqdm(train_dl, unit = 'batch', desc = 'Epoch [{:>2}/{:>2}]'.format(epoch+1, n_epochs)) as tepoch:
+        for i, batch in enumerate(tepoch):
+          loss = self.loss_batch(batch, opt, metric)
+          running_loss += loss
+          if i % 2 == 1: # Each 2 batches
+            avg_loss = running_loss/2
+            tepoch.set_postfix_str('Average loss = {:.4f}'.format(avg_loss))
+            running_loss = 0.
+      # Validation
+      self.eval()
+      metric_dict = self.evaluate(valid_dl, metric)
