@@ -33,7 +33,7 @@ class FasterRCNN(nn.Module):
           metric.update(preds, batch[1]) # preds, targets
           metric_dict =  metric.compute()
           vepoch.set_postfix_str('mAP = {map} - mAP@0.5 = {map_50} - mAP@0.75 = {map_75}'.format(**metric_dict))
-          return metric_dict
+      return metric_dict
   
   def fit(self, train_dl: DataLoader, valid_dl: DataLoader, n_epochs: int, metric: Metric = None, opt = None):
     for epoch in range(n_epochs):
