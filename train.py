@@ -41,7 +41,7 @@ def main():
     device
   )
   
-  model = FasterRCNN(num_classes = 3)
+  model = FasterRCNN(num_classes = 3).to(device)
   opt = torch.optim.Adam(model.parameters(), lr = lr, weight_decay = weight_decay)
   
   model.fit(train_dl, valid_dl, metric = MeanAveragePrecision(), opt = opt, n_epochs = n_epochs)
