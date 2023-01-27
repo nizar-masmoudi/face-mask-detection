@@ -44,8 +44,8 @@ class FasterRCNN(nn.Module):
         for i, batch in enumerate(tepoch):
           loss = self.loss_batch(batch, opt, metric)
           running_loss += loss
-          if i % 2 == 1: # Each 2 batches
-            avg_loss = running_loss/2
+          if i % 100 == 99: # Each 100 batches
+            avg_loss = running_loss/100
             tepoch.set_postfix_str('Average loss = {:.4f}'.format(avg_loss))
             running_loss = 0.
       # Validation
