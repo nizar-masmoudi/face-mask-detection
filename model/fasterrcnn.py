@@ -8,7 +8,7 @@ from torchmetrics import Metric
 from tqdm import tqdm
 
 class FasterRCNN(nn.Module):
-  def __init__(self, num_classes: int, weights: Any = None) -> None:
+  def __init__(self, num_classes: int, weights: str = None) -> None:
     super(FasterRCNN, self).__init__()
     self.fasterrcnn = fasterrcnn_resnet50_fpn(weights = weights)
     in_features = self.fasterrcnn.roi_heads.box_predictor.cls_score.in_features
