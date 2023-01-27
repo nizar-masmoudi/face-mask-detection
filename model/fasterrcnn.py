@@ -51,3 +51,4 @@ class FasterRCNN(nn.Module):
       # Validation
       self.eval()
       metric_dict = self.evaluate(valid_dl, metric)
+    return metric_dict

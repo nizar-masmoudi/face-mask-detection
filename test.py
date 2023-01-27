@@ -19,7 +19,7 @@ train_ds, valid_ds = train_val_split(dataset, val_split = .2)
 train_dl = DeviceDataLoader(
   DataLoader(train_ds, batch_size = 1, shuffle = False, collate_fn = lambda batch: tuple(zip(*batch))), # Add custom collate_fn because DataLoader expects all inputs to be same size
   device
-  
+
 )
 valid_dl = DeviceDataLoader(
   DataLoader(valid_ds, batch_size = 1, shuffle = False, collate_fn = lambda batch: tuple(zip(*batch))), # Add custom collate_fn because DataLoader expects all inputs to be same size
