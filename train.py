@@ -60,7 +60,7 @@ def main():
   )
   
   model = FasterRCNN(num_classes = 3, weights = 'COCO_V1').to(device)
-  opt = torch.optim.SGD(model.parameters(), lr = lr, weight_decay = weight_decay)
+  opt = torch.optim.SGD(model.parameters(), lr = lr, weight_decay = weight_decay, momentum = momentum)
   
   model.fit(train_dl, valid_dl, metric = MeanAveragePrecision(), opt = opt, n_epochs = n_epochs, logger = logger)
 
