@@ -32,8 +32,9 @@ class FasterRCNN(nn.Module):
           preds = self(*batch)
           metric.update(preds, batch[1]) # preds, targets
           metric_dict =  metric.compute()
-          vepoch.set_postfix_str('mAP = {map} - mAP@0.5 = {map_50} - mAP@0.75 = {map_75}'.format(**metric_dict))
-      return metric_dict
+          vepoch.set_postfix_str('mAP = {:.4f} - mAP@0.5 = {:.4f} - mAP@0.75 = {:.4f}'.format(metric_dict['map'], metric_dict['map_50'], metric_dict['map_75']))
+    metric.reset()
+    return metric_dict
   
   def fit(self, train_dl: DataLoader, valid_dl: DataLoader, n_epochs: int, metric: Metric = None, opt = None):
     for epoch in range(n_epochs):
@@ -44,10 +45,9 @@ class FasterRCNN(nn.Module):
         for i, batch in enumerate(tepoch):
           loss = self.loss_batch(batch, opt, metric)
           running_loss += loss
-          if i % 100 == 99: # Each 100 batches
-            avg_loss = running_loss/100
+          if i == len(train_dl) - 1:
+            avg_loss = running_loss/len(train_dl)
             tepoch.set_postfix_str('Average loss = {:.4f}'.format(avg_loss))
-            running_loss = 0.
       # Validation
       self.eval()
       metric_dict = self.evaluate(valid_dl, metric)

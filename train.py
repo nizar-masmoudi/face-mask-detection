@@ -9,6 +9,7 @@ from model.fasterrcnn import FasterRCNN
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
 import torch
 from dataset.utils import train_val_split
+import warnings
 
 def main():
   parser = argparse.ArgumentParser(description = 'Train the model')
@@ -23,12 +24,14 @@ def main():
   
   batch_size = config['TRAINING'].getint('BatchSize')
   lr = config['TRAINING'].getfloat('LearningRate')
-  weight_decay = config['TRAINING'].getint('WeightDecay')
+  weight_decay = config['TRAINING'].getfloat('WeightDecay')
   n_epochs = config['TRAINING'].getint('MaxEpochs')
   
   dataset = FaceMask(transform = ToTensor(), target_transform = ParseXML())
+  dataset = torch.utils.data.Subset(dataset, list(range(10)))
   if not torch.cuda.is_available():
-    raise UserWarning('Training on CPU. This might take a long time!')
+    warnings.warn('Training on CPU. This might take a long time!', UserWarning)
+
   device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
   train_ds, valid_ds = train_val_split(dataset, val_split = .05)
@@ -42,7 +45,7 @@ def main():
   )
   
   model = FasterRCNN(num_classes = 3, weights = 'COCO_V1').to(device)
-  opt = torch.optim.Adam(model.parameters(), lr = lr, weight_decay = weight_decay)
+  opt = torch.optim.SGD(model.parameters(), lr = lr, weight_decay = weight_decay)
   
   model.fit(train_dl, valid_dl, metric = MeanAveragePrecision(), opt = opt, n_epochs = n_epochs)
 
