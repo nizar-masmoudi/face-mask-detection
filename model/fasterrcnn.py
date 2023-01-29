@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 from torchvision.models.detection import fasterrcnn_resnet50_fpn
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
-from typing import Any, Callable
 from torch.utils.data import DataLoader
 from torchmetrics import Metric
 from tqdm import tqdm
+from typing import Any
 
 class FasterRCNN(nn.Module):
   def __init__(self, num_classes: int, weights: str = None) -> None:
@@ -28,15 +28,17 @@ class FasterRCNN(nn.Module):
   def evaluate(self, dataloader: DataLoader, metric: Metric = None):
     with torch.no_grad():
       with tqdm(dataloader, unit = 'batch', desc = 'Validation') as vepoch:
-        for batch in vepoch:
+        for i, batch in enumerate(vepoch):
           preds = self(*batch)
           metric.update(preds, batch[1]) # preds, targets
           metric_dict =  metric.compute()
-          vepoch.set_postfix_str('mAP = {:.4f} - mAP@0.5 = {:.4f} - mAP@0.75 = {:.4f}'.format(metric_dict['map'], metric_dict['map_50'], metric_dict['map_75']))
-    metric.reset()
+          if i == len(dataloader) - 1: # If it's last batch
+            metric_dict =  metric.compute()
+            vepoch.set_postfix_str('mAP = {:.4f} - mAP@0.5 = {:.4f} - mAP@0.75 = {:.4f}'.format(metric_dict['map'], metric_dict['map_50'], metric_dict['map_75']))
+            metric.reset()
     return metric_dict
   
-  def fit(self, train_dl: DataLoader, valid_dl: DataLoader, n_epochs: int, metric: Metric = None, opt = None):
+  def fit(self, train_dl: DataLoader, valid_dl: DataLoader, n_epochs: int, metric: Metric = None, opt = None, logger: Any = None):
     for epoch in range(n_epochs):
       # Training (1 epoch)
       running_loss = 0.
@@ -47,8 +49,10 @@ class FasterRCNN(nn.Module):
           running_loss += loss
           if i == len(train_dl) - 1:
             avg_loss = running_loss/len(train_dl)
+            if logger: logger.log_metrics({'loss': avg_loss}, epoch+1)
             tepoch.set_postfix_str('Average loss = {:.4f}'.format(avg_loss))
       # Validation
       self.eval()
       metric_dict = self.evaluate(valid_dl, metric)
+      if logger: logger.log_metrics(metric_dict, epoch+1)
     return metric_dict
