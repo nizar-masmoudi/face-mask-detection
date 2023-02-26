@@ -42,7 +42,6 @@ def main():
   })
   
   dataset = FaceMask(transform = ToTensor(), target_transform = ParseXML())
-  # dataset = torch.utils.data.Subset(dataset, list(range(10)))
   
   if not torch.cuda.is_available():
     warnings.warn('Training on CPU. This might take a long time!', UserWarning)
